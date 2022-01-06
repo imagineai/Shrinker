@@ -3,15 +3,21 @@ module Shrink.PlutusTX (
   shrinkCompiledSp,
 ) where
 
-import Shrink (defaultShrinkParams, shrinkScriptSp)
+import Codec.Serialise      (serialise)
+import Data.ByteString.Lazy (toStrict)
+
+import Plutus.V1.Ledger.Scripts (Script (Script), fromCompiledCode)
+import PlutusCore.DeBruijn      (fakeNameDeBruijn)
+import PlutusTx.Code            ( CompiledCode
+                                , CompiledCodeIn ( DeserializedCode
+                                                 , SerializedCode
+                                                 )
+                                )
+import UntypedPlutusCore        (programMapNames)
+
+import Shrink       (defaultShrinkParams, shrinkScriptSp)
 import Shrink.Types (ShrinkParams)
 
-import Codec.Serialise (serialise)
-import Data.ByteString.Lazy (toStrict)
-import Plutus.V1.Ledger.Scripts (Script (Script), fromCompiledCode)
-import PlutusCore.DeBruijn (fakeNameDeBruijn)
-import PlutusTx.Code (CompiledCode, CompiledCodeIn (DeserializedCode, SerializedCode))
-import UntypedPlutusCore (programMapNames)
 
 shrinkCompiled :: CompiledCode a -> CompiledCode a
 shrinkCompiled = shrinkCompiledSp defaultShrinkParams
@@ -23,5 +29,7 @@ shrinkCompiledSp sp comped =
       prog = programMapNames fakeNameDeBruijn prog'
       scriptBc = toStrict $ serialise script
    in case comped of
-        SerializedCode _ maybePirByteString -> SerializedCode scriptBc maybePirByteString
-        DeserializedCode _ maybePir -> DeserializedCode prog maybePir
+        SerializedCode _ maybePirByteString ->
+            SerializedCode scriptBc maybePirByteString
+        DeserializedCode _ maybePir ->
+            DeserializedCode prog maybePir
